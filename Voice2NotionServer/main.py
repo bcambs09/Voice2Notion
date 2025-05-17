@@ -59,6 +59,9 @@ class TextInput(BaseModel):
 class TaskInput(BaseModel):
     description: str
 
+class MovieInput(BaseModel):
+    title: str
+
 # @app.post("/process-audio")
 # @limiter.limit("5/minute")
 # async def process_audio(request: Request, file: UploadFile = File(...), api_key: str = Depends(get_api_key)):
@@ -91,8 +94,21 @@ async def create_task(request: Request, input: TaskInput, api_key: str = Depends
     
     # Run the workflow
     result = await chain.ainvoke(state)
-    
+
     return {"message": "Task created successfully", "result": result}
+
+
+@app.post("/add-movie")
+@limiter.limit("10/minute")
+async def add_movie(request: Request, input: MovieInput, api_key: str = Depends(get_api_key)):
+    """Add a movie title to the Notion movie list using the agent workflow"""
+    state = {
+        "messages": [HumanMessage(content=input.title)],
+    }
+
+    result = await chain.ainvoke(state)
+
+    return {"message": "Movie added successfully", "result": result}
 
 @app.get("/health")
 @limiter.limit("30/minute")

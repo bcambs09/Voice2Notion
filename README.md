@@ -33,6 +33,7 @@ A voice-to-Notion application that allows you to create Notion pages using voice
    OPENAI_API_KEY=your_openai_api_key
    NOTION_TOKEN=your_notion_integration_token
    NOTION_PAGE_ID=your_notion_page_id
+   NOTION_MOVIE_DATABASE_ID=your_movie_database_id
    ```
 5. Run the server:
    ```bash

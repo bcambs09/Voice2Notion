@@ -48,6 +48,10 @@ class CreateTaskInput(BaseModel):
         description="Dictionary of property names to their values. Must include Name, Status, and Priority."
     )
 
+class AddMovieInput(BaseModel):
+    """Input schema for adding a movie to the watch list"""
+    title: str = Field(..., description="Title of the movie")
+
 # Define our tools
 async def get_database_schema() -> dict:
     """Get the schema of the Notion database"""
@@ -73,6 +77,21 @@ async def create_new_task(task_input: CreateTaskInput) -> str:
     print(f"Created task in Notion: {response}")
     return "Created task in Notion."
 
+async def add_to_movie_list(movie_input: AddMovieInput) -> str:
+    """Add a movie to the Notion movie list"""
+    notion = AsyncClient(auth=os.getenv("NOTION_TOKEN"))
+    movie_db_id = os.getenv("NOTION_MOVIE_DATABASE_ID")
+    if not movie_db_id:
+        raise ValueError("NOTION_MOVIE_DATABASE_ID is not set")
+    response = await notion.pages.create(
+        parent={"database_id": movie_db_id},
+        properties={
+            "Name": {"title": [{"text": {"content": movie_input.title}}]}
+        }
+    )
+    print(f"Added movie to Notion: {response}")
+    return "Added movie to Notion."
+
 # Create tools
 tools = [
     # StructuredTool.from_function(
@@ -84,13 +103,22 @@ tools = [
         coroutine=create_new_task,
         name="create_new_task",
         description="Create a new task in the Notion database"
+    ),
+    StructuredTool.from_function(
+        coroutine=add_to_movie_list,
+        name="add_to_movie_list",
+        description="Add a movie to the Notion movie list"
     )
 ]
 
 # Create the prompt
 prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are a helpful assistant that creates Notion database entries based on voice input.
-    Your job is to extract task information from natural language input and create appropriate Notion tasks.
+("system", """You are a helpful assistant that creates Notion database entries based on voice input.
+    Your job is to extract task information from natural language input and create appropriate Notion tasks or add movies to a watch list.
+
+    Available tools:
+    - create_new_task: create a new task in the tasks database.
+    - add_to_movie_list: add a movie title to the movie list database.
     
     You should follow these steps:
     1. Extract task properties from the natural language input:
